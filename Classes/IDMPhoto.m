@@ -36,7 +36,8 @@
 // Properties
 @synthesize underlyingImage = _underlyingImage, 
 photoURL = _photoURL,
-caption = _caption;
+caption = _caption,
+photoURLRequest = _photoURLRequest;
 
 #pragma mark Class Methods
 
@@ -50,6 +51,10 @@ caption = _caption;
 
 + (IDMPhoto *)photoWithURL:(NSURL *)url {
 	return [[IDMPhoto alloc] initWithURL:url];
+}
+
++ (IDMPhoto *)photoWithNSURLRequest:(NSURLRequest *)urlRequest {
+    return [[IDMPhoto alloc] initWithURLRequest:urlRequest];
 }
 
 + (NSArray *)photosWithImages:(NSArray *)imagesArray {
@@ -118,6 +123,13 @@ caption = _caption;
 	return self;
 }
 
+- (id)initWithURLRequest:(NSURLRequest *)urlRequest {
+    if ((self = [super init])) {
+        _photoURLRequest = [urlRequest copy];
+    }
+    return self;
+}
+
 #pragma mark IDMPhoto Protocol Methods
 
 - (UIImage *)underlyingImage {
@@ -134,11 +146,17 @@ caption = _caption;
         if (_photoPath) {
             // Load async from file
             [self performSelectorInBackground:@selector(loadImageFromFileAsync) withObject:nil];
-        } else if (_photoURL) {
+        } else if (_photoURL || _photoURLRequest) {
             // Load async from web (using AFNetworking)
-            NSURLRequest *request = [[NSURLRequest alloc] initWithURL:_photoURL
-                                                          cachePolicy:NSURLRequestReturnCacheDataElseLoad
-                                                      timeoutInterval:0];
+            NSURLRequest *request = nil;
+            
+            if (_photoURLRequest) {
+                request = _photoURLRequest;
+            } else {
+                request = [[NSURLRequest alloc] initWithURL:_photoURL
+                                                cachePolicy:NSURLRequestReturnCacheDataElseLoad
+                                            timeoutInterval:0];
+            }
             
             AFHTTPRequestOperation *op = [[AFHTTPRequestOperation alloc] initWithRequest:request];
             op.responseSerializer = [AFImageResponseSerializer serializer];
